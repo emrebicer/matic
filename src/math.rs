@@ -1,6 +1,7 @@
+#[derive(Copy, Clone)]
 pub struct Point2d {
-    x: f64,
-    y: f64,
+    pub x: f64,
+    pub y: f64,
 }
 
 // Euclidean distance for 2 dimensions
@@ -10,10 +11,11 @@ impl Distance for Point2d {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Point3d {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 // Euclidean distance for 3 dimensions
