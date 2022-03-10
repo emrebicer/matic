@@ -80,6 +80,7 @@ where
 mod tests {
 
     use crate::math::{Point2d, Point3d};
+    use super::predict;
 
     #[derive(Copy, Clone, Eq, PartialEq, Debug)]
     enum MyLabels {
@@ -110,12 +111,12 @@ mod tests {
         let x2 = Point2d { x: 12.0, y: 12.0 };
         let x3 = Point2d { x: 10.1, y: 10.1 };
 
-        let output_1 = super::predict(&dataset_2d, x1, 5);
-        let output_2 = super::predict(&dataset_2d, x2, 3);
-        let output_3 = super::predict(&dataset_2d, x2, 21);
-        let output_4 = super::predict(&dataset_2d, x2, 0);
-        let output_5 = super::predict(&dataset_2d, x3, 1);
-        let output_6 = super::predict(&dataset_2d, x3, 9);
+        let output_1 = predict(&dataset_2d, x1, 5);
+        let output_2 = predict(&dataset_2d, x2, 3);
+        let output_3 = predict(&dataset_2d, x2, 21);
+        let output_4 = predict(&dataset_2d, x2, 0);
+        let output_5 = predict(&dataset_2d, x3, 1);
+        let output_6 = predict(&dataset_2d, x3, 9);
 
         assert_eq!(output_1, Some(MyLabels::FirstLabel));
         assert_eq!(output_2, Some(MyLabels::SecondLabel));
@@ -162,12 +163,12 @@ mod tests {
             z: 10.1,
         };
 
-        let output_1 = super::predict(&dataset_3d, x1, 5);
-        let output_2 = super::predict(&dataset_3d, x2, 3);
-        let output_3 = super::predict(&dataset_3d, x2, 21);
-        let output_4 = super::predict(&dataset_3d, x2, 0);
-        let output_5 = super::predict(&dataset_3d, x3, 1);
-        let output_6 = super::predict(&dataset_3d, x3, 9);
+        let output_1 = predict(&dataset_3d, x1, 5);
+        let output_2 = predict(&dataset_3d, x2, 3);
+        let output_3 = predict(&dataset_3d, x2, 21);
+        let output_4 = predict(&dataset_3d, x2, 0);
+        let output_5 = predict(&dataset_3d, x3, 1);
+        let output_6 = predict(&dataset_3d, x3, 9);
 
         assert_eq!(output_1, Some(MyLabels::FirstLabel));
         assert_eq!(output_2, Some(MyLabels::SecondLabel));
