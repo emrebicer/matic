@@ -79,8 +79,15 @@ where
 #[cfg(test)]
 mod tests {
 
-    use crate::math::{Point2d, Point3d};
     use super::predict;
+    use crate::math::{Point2d, Point3d};
+
+    use plotlib::page::Page;
+    use plotlib::repr::Plot;
+    use plotlib::style::{PointMarker, PointStyle};
+    use plotlib::view::ContinuousView;
+    use rand::seq::SliceRandom;
+    use rand::Rng;
 
     #[derive(Copy, Clone, Eq, PartialEq, Debug)]
     enum MyLabels {
@@ -177,5 +184,100 @@ mod tests {
         assert_eq!(output_2, Some(MyLabels::SecondLabel));
         assert_eq!(output_5, Some(MyLabels::SecondLabel));
         assert_eq!(output_6, Some(MyLabels::SecondLabel));
+    }
+
+    #[test]
+    #[ignore]
+    fn knn_random_dataset_integration_test() {
+        let mut rng = rand::thread_rng();
+        let mut dataset = Vec::new();
+        let labels = [MyLabels::FirstLabel, MyLabels::SecondLabel];
+        for _ in 0..20 {
+            dataset.push((
+                Point2d {
+                    x: rng.gen_range(0.0..50.0),
+                    y: rng.gen_range(0.0..50.0),
+                },
+                labels
+                    .choose(&mut rand::thread_rng())
+                    .expect("Dataset can't be empty")
+                    .to_owned(),
+            ))
+        }
+
+        let x1 = Point2d { x: 10.0, y: 10.0 };
+        let x2 = Point2d { x: 25.0, y: 25.0 };
+        let x3 = Point2d { x: 45.0, y: 45.0 };
+        let result1 = predict(&dataset, x1, 3).unwrap();
+        let result2 = predict(&dataset, x2, 3).unwrap();
+        let result3 = predict(&dataset, x3, 3).unwrap();
+
+        let first_label_color = "#FF2222";
+        let second_label_color = "#22FF22";
+        let c1: Plot = Plot::new(
+            dataset
+                .iter()
+                .filter(|x| x.1 == MyLabels::FirstLabel)
+                .map(|x| (x.0.x, x.0.y))
+                .collect(),
+        )
+        .point_style(
+            PointStyle::new()
+                .marker(PointMarker::Square)
+                .colour(first_label_color),
+        );
+        let c2: Plot = Plot::new(
+            dataset
+                .iter()
+                .filter(|x| x.1 == MyLabels::SecondLabel)
+                .map(|x| (x.0.x, x.0.y))
+                .collect(),
+        )
+        .point_style(
+            PointStyle::new()
+                .marker(PointMarker::Square)
+                .colour(second_label_color),
+        );
+
+        let p1: Plot = Plot::new(vec![(x1.x, x1.y)]).point_style(
+            PointStyle::new().marker(PointMarker::Circle).colour(
+                if result1 == MyLabels::FirstLabel {
+                    first_label_color
+                } else {
+                    second_label_color
+                },
+            ),
+        );
+        let p2: Plot = Plot::new(vec![(x2.x, x2.y)]).point_style(
+            PointStyle::new().marker(PointMarker::Circle).colour(
+                if result2 == MyLabels::FirstLabel {
+                    first_label_color
+                } else {
+                    second_label_color
+                },
+            ),
+        );
+        let p3: Plot = Plot::new(vec![(x3.x, x3.y)]).point_style(
+            PointStyle::new().marker(PointMarker::Circle).colour(
+                if result3 == MyLabels::FirstLabel {
+                    first_label_color
+                } else {
+                    second_label_color
+                },
+            ),
+        );
+
+        let v = ContinuousView::new()
+            .add(c1)
+            .add(c2)
+            .add(p1)
+            .add(p2)
+            .add(p3)
+            .x_range(0., 50.)
+            .y_range(0., 50.)
+            .x_label("X")
+            .y_label("Y");
+
+        Page::single(&v).save("scatter.svg").unwrap();
     }
 }
