@@ -20,7 +20,7 @@ where
 
 impl<D> KMeans<D>
 where
-    D: Distance + Copy + Average,
+    D: Distance + Copy + Average + PartialEq,
 {
     ///
     /// # Parameters
@@ -119,14 +119,15 @@ where
             self.initialize_centroids(data);
         }
         let mut assignments = self.predict_batch(data); //self.assign_labels(data);
-
         let mut iteration_count = 0;
+        let mut previos_centroids = vec![];
 
-        while iteration_count < self.max_iter {
+        while iteration_count < self.max_iter && previos_centroids != self.centroids {
             // Assign labels to the given data
-            assignments = self.predict_batch(data); //self.assign_labels(data);
+            assignments = self.predict_batch(data);
 
             // Recompute the centroids
+            previos_centroids = self.centroids.clone();
             self.compute_centroids(
                 &assignments
                     .iter()
@@ -297,9 +298,8 @@ mod tests {
         let (centroids, labels) = kmeans.fit(&dataset);
         save_plot_result(&dataset, &labels, &centroids);
     }
-    
-    fn save_plot_result(dataset: &Vec<Point2d>, labels: &Vec<usize>, centroids: &Vec<Point2d>) {
 
+    fn save_plot_result(dataset: &Vec<Point2d>, labels: &Vec<usize>, centroids: &Vec<Point2d>) {
         assert_eq!(labels.len(), dataset.len());
         // This function assumes there are 3 clusters
         assert_eq!(centroids.len(), 3);
@@ -357,7 +357,7 @@ mod tests {
             .y_range(0., 50.)
             .x_label("X")
             .y_label("Y");
-            
+
         // A page with a single view is then saved to an SVG file
         Page::single(&v).save("scatter.svg").unwrap();
     }
