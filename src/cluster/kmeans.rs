@@ -74,7 +74,7 @@ where
                 // Select the rest of centroids by finding the
                 // furthest away data points from the previous centroids
                 for _ in 1..self.n_clusters {
-                    let mut furthest_data_point = data.first().unwrap();
+                    let mut furthest_data_point = data.first().expect("data can't be empty");
                     let mut furthest_data_point_distance = f64::MIN;
 
                     for data_point in data {
@@ -118,7 +118,7 @@ where
         if self.centroids.len() != self.n_clusters {
             self.initialize_centroids(data);
         }
-        let mut assignments = self.predict_batch(data); //self.assign_labels(data);
+        let mut assignments = self.predict_batch(data);
         let mut iteration_count = 0;
         let mut previos_centroids = vec![];
 
@@ -132,7 +132,14 @@ where
                 &assignments
                     .iter()
                     .enumerate()
-                    .map(|(index, assignment)| (*data.get(index).unwrap(), *assignment))
+                    .map(|(index, assignment)| {
+                        (
+                            *data
+                                .get(index)
+                                .expect("data and assignments should have the same length"),
+                            *assignment,
+                        )
+                    })
                     .collect(),
             );
             iteration_count += 1;
