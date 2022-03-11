@@ -1,4 +1,4 @@
-use crate::math::Distance;
+use crate::math::{Average, Distance};
 use rand::seq::SliceRandom;
 
 // Centroid initialization
@@ -20,7 +20,7 @@ where
 
 impl<D> KMeans<D>
 where
-    D: Distance + Copy,
+    D: Distance + Copy + Average,
 {
     ///
     /// # Parameters
@@ -96,19 +96,53 @@ where
         }
     }
 
+    // Find the average point for each centroid from the given data
+    // `data` consist of a tuple where first element is the data point
+    // and the second element is the assigned cluster index
+    fn compute_centroids(&mut self, data: &Vec<(D, usize)>) {
+        let mut assigned_points = vec![];
+        for _ in 0..self.n_clusters {
+            assigned_points.push(vec![]);
+        }
+        for (data_point, cluster_index) in data {
+            assigned_points[*cluster_index].push(*data_point);
+        }
+        for (centroid_index, points) in assigned_points.iter().enumerate() {
+            self.centroids[centroid_index] = D::average(points);
+        }
+    }
+
     // Computes the cluster centroids
     // Return centroids and a vector that has the assigned centroid indexes
-    pub fn fit(&mut self, data: &Vec<D>) -> (Vec<D>, Vec<usize>) {
+    pub fn fit(&mut self, data: &Vec<D>) -> (&Vec<D>, Vec<usize>) {
         if self.centroids.len() != self.n_clusters {
             self.initialize_centroids(data);
         }
+        let mut assignments = self.predict_batch(data); //self.assign_labels(data);
 
-        unimplemented!();
+        let mut iteration_count = 0;
+
+        while iteration_count < self.max_iter {
+            // Assign labels to the given data
+            assignments = self.predict_batch(data); //self.assign_labels(data);
+
+            // Recompute the centroids
+            self.compute_centroids(
+                &assignments
+                    .iter()
+                    .enumerate()
+                    .map(|(index, assignment)| (*data.get(index).unwrap(), *assignment))
+                    .collect(),
+            );
+            iteration_count += 1;
+        }
+
+        return (&self.centroids, assignments);
     }
 
     // Assigns the given data to a cluster
     // Returns the cluster index
-    pub fn predict(&self, x: D) -> usize {
+    pub fn predict(&self, x: &D) -> usize {
         // Find the closests centroid to the input
         let mut min_distance = f64::MAX;
         let mut cluster_index = 0;
@@ -126,7 +160,7 @@ where
 
     // Assigns the given batch of data to clusters
     // Returns a vector of cluster indexs in the given order
-    pub fn predict_batch(&self, x: Vec<D>) -> Vec<usize> {
+    pub fn predict_batch(&self, x: &Vec<D>) -> Vec<usize> {
         let mut predictions = Vec::new();
         for data_point in x {
             predictions.push(self.predict(data_point));
@@ -141,6 +175,12 @@ mod tests {
     use super::{Initialization, KMeans};
     use crate::math::Point2d;
 
+    use plotlib::page::Page;
+    use plotlib::repr::Plot;
+    use plotlib::style::{PointMarker, PointStyle};
+    use plotlib::view::ContinuousView;
+    use rand::Rng;
+
     #[test]
     fn random_centroid_init() {
         let mut dataset = Vec::new();
@@ -152,7 +192,7 @@ mod tests {
         }
         let mut kmeans = KMeans::new(Some(5), Some(Initialization::Random), None, None);
 
-        kmeans.fit(&dataset);
+        kmeans.initialize_centroids(&dataset);
         assert_eq!(kmeans.centroids.len(), 5);
 
         for centroid in kmeans.centroids {
@@ -171,7 +211,7 @@ mod tests {
         }
         let mut kmeans = KMeans::new(Some(5), Some(Initialization::Kmeanspp), None, None);
 
-        kmeans.fit(&dataset);
+        kmeans.initialize_centroids(&dataset);
         assert_eq!(kmeans.centroids.len(), 5);
 
         for centroid in kmeans.centroids {
@@ -206,20 +246,119 @@ mod tests {
             Point2d { x: 100.0, y: 100.0 },
         ];
         let mut result;
-        result = kmeans.predict(*batch.get(0).unwrap());
+        result = kmeans.predict(batch.get(0).unwrap());
         assert_eq!(result, 0);
-        result = kmeans.predict(*batch.get(1).unwrap());
+        result = kmeans.predict(batch.get(1).unwrap());
         assert_eq!(result, 0);
-        result = kmeans.predict(*batch.get(2).unwrap());
+        result = kmeans.predict(batch.get(2).unwrap());
         assert_eq!(result, 1);
-        result = kmeans.predict(*batch.get(3).unwrap());
+        result = kmeans.predict(batch.get(3).unwrap());
         assert_eq!(result, 2);
-        result = kmeans.predict(*batch.get(4).unwrap());
+        result = kmeans.predict(batch.get(4).unwrap());
         assert_eq!(result, 3);
-        result = kmeans.predict(*batch.get(5).unwrap());
+        result = kmeans.predict(batch.get(5).unwrap());
         assert_eq!(result, 4);
 
         let correct_labels = vec![0, 0, 1, 2, 3, 4];
-        assert_eq!(correct_labels, kmeans.predict_batch(batch));
+        assert_eq!(correct_labels, kmeans.predict_batch(&batch));
+    }
+
+    #[test]
+    #[ignore]
+    fn kmeans_linear_dataset_integration_test() {
+        let mut dataset = Vec::<Point2d>::new();
+        for i in 0..50 {
+            dataset.push(Point2d {
+                x: i as f64,
+                y: i as f64,
+            })
+        }
+
+        let mut kmeans = KMeans::new(Some(3), Some(Initialization::Random), None, None);
+
+        let (centroids, labels) = kmeans.fit(&dataset);
+        save_plot_result(&dataset, &labels, &centroids);
+    }
+
+    #[test]
+    #[ignore]
+    fn kmeans_random_dataset_integration_test() {
+        let mut rng = rand::thread_rng();
+        let mut dataset = Vec::<Point2d>::new();
+        for _ in 0..2000 {
+            dataset.push(Point2d {
+                x: rng.gen_range(0.0..50.0),
+                y: rng.gen_range(0.0..50.0),
+            })
+        }
+
+        let mut kmeans = KMeans::new(Some(3), Some(Initialization::Kmeanspp), None, None);
+
+        let (centroids, labels) = kmeans.fit(&dataset);
+        save_plot_result(&dataset, &labels, &centroids);
+    }
+    
+    fn save_plot_result(dataset: &Vec<Point2d>, labels: &Vec<usize>, centroids: &Vec<Point2d>) {
+
+        assert_eq!(labels.len(), dataset.len());
+        // This function assumes there are 3 clusters
+        assert_eq!(centroids.len(), 3);
+
+        let mut first_cluster_members = vec![];
+        let mut second_cluster_members = vec![];
+        let mut third_cluster_members = vec![];
+        let mut cluster_centers = vec![];
+
+        for centroid in centroids {
+            cluster_centers.push((centroid.x, centroid.y));
+        }
+
+        for index in 0..labels.len() {
+            let label = labels.get(index).unwrap();
+            let current_point = dataset.get(index).unwrap();
+            let current_coordinates = (current_point.x, current_point.y);
+            match label {
+                0 => first_cluster_members.push(current_coordinates),
+                1 => second_cluster_members.push(current_coordinates),
+                2 => third_cluster_members.push(current_coordinates),
+                _ => panic!("No further index should be present in the labels"),
+            }
+        }
+
+        let c1: Plot = Plot::new(first_cluster_members).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Square)
+                .colour("#FF2222"),
+        );
+        let c2: Plot = Plot::new(second_cluster_members).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Square)
+                .colour("#22FF22"),
+        );
+        let c3: Plot = Plot::new(third_cluster_members).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Square)
+                .colour("#2222FF"),
+        );
+
+        let centers: Plot = Plot::new(cluster_centers).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Circle)
+                .colour("#000000"),
+        );
+
+        // The 'view' describes what set of data is drawn
+        let v = ContinuousView::new()
+            .add(c1)
+            .add(c2)
+            .add(c3)
+            .add(centers)
+            .x_range(0., 50.)
+            .y_range(0., 50.)
+            .x_label("X")
+            .y_label("Y");
+            
+        // A page with a single view is then saved to an SVG file
+        Page::single(&v).save("scatter.svg").unwrap();
     }
 }
