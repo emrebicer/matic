@@ -1,7 +1,7 @@
 use crate::math::{Average, Distance};
 use rand::seq::SliceRandom;
 
-// Centroid initialization
+/// Centroid initialization methods
 pub enum Initialization {
     Random,
     // Kmeans++
@@ -32,6 +32,10 @@ where
     ///     or if the amount of given data points is not equal to `n_clusters`
     ///     the centroids will be initialized according to the `initialization`
     /// `dataset`: dataset to be clustered
+    ///
+    /// # Returns
+    ///
+    /// The newly created KMeans instance
     ///
     pub fn new(
         n_clusters: Option<usize>,
@@ -96,9 +100,9 @@ where
         }
     }
 
-    // Find the average point for each centroid from the given data
-    // `data` consist of a tuple where first element is the data point
-    // and the second element is the assigned cluster index
+    /// Find the average point for each centroid from the given data
+    /// `data` consist of a tuple where first element is the data point
+    /// and the second element is the assigned cluster index
     fn compute_centroids(&mut self, data: &Vec<(D, usize)>) {
         let mut assigned_points = vec![];
         for _ in 0..self.n_clusters {
@@ -112,8 +116,8 @@ where
         }
     }
 
-    // Computes the cluster centroids
-    // Return centroids and a vector that has the assigned centroid indexes
+    /// Computes the cluster centroids
+    /// Return centroids and a vector that has the assigned centroid indexes
     pub fn fit(&mut self, data: &Vec<D>) -> (&Vec<D>, Vec<usize>) {
         if self.centroids.len() != self.n_clusters {
             self.initialize_centroids(data);
@@ -148,8 +152,8 @@ where
         return (&self.centroids, assignments);
     }
 
-    // Assigns the given data to a cluster
-    // Returns the cluster index
+    /// Assigns the given data to a cluster
+    /// Returns the cluster index
     pub fn predict(&self, x: &D) -> usize {
         // Find the closests centroid to the input
         let mut min_distance = f64::MAX;
@@ -166,8 +170,8 @@ where
         return cluster_index;
     }
 
-    // Assigns the given batch of data to clusters
-    // Returns a vector of cluster indexs in the given order
+    /// Assigns the given batch of data to clusters
+    /// Returns a vector of cluster indexs in the given order
     pub fn predict_batch(&self, x: &Vec<D>) -> Vec<usize> {
         let mut predictions = Vec::new();
         for data_point in x {

@@ -1,3 +1,4 @@
+use crate::error::KNNError;
 use crate::math::Distance;
 
 #[derive(PartialEq, Debug)]
@@ -7,17 +8,17 @@ struct Neighbor<L> {
 }
 
 /// Predict the label of `x` given `dataset` and `k`
-pub fn predict<F, L>(dataset: &Vec<(F, L)>, x: F, k: usize) -> Option<L>
+pub fn predict<F, L>(dataset: &Vec<(F, L)>, x: F, k: usize) -> Result<L, KNNError>
 where
     F: Distance + Copy,
     L: Eq + Copy + std::fmt::Debug,
 {
     if dataset.len() < k {
-        return None;
+        return Err(KNNError::DatasetTooSmall);
     }
 
     if k < 1 {
-        return None;
+        return Err(KNNError::KMustBePositive);
     }
 
     // Find the closest neighbors to x
@@ -73,13 +74,14 @@ where
         }
     }
 
-    return Some(majority_label);
+    return Ok(majority_label);
 }
 
 #[cfg(test)]
 mod tests {
 
     use super::predict;
+    use crate::error::KNNError;
     use crate::math::{Point2d, Point3d};
 
     use plotlib::page::Page;
@@ -125,13 +127,13 @@ mod tests {
         let output_5 = predict(&dataset_2d, x3, 1);
         let output_6 = predict(&dataset_2d, x3, 9);
 
-        assert_eq!(output_1, Some(MyLabels::FirstLabel));
-        assert_eq!(output_2, Some(MyLabels::SecondLabel));
-        assert_eq!(output_3, None);
-        assert_eq!(output_4, None);
-        assert_eq!(output_2, Some(MyLabels::SecondLabel));
-        assert_eq!(output_5, Some(MyLabels::SecondLabel));
-        assert_eq!(output_6, Some(MyLabels::SecondLabel));
+        assert_eq!(output_1, Ok(MyLabels::FirstLabel));
+        assert_eq!(output_2, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_3, Err(KNNError::DatasetTooSmall));
+        assert_eq!(output_4, Err(KNNError::KMustBePositive));
+        assert_eq!(output_2, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_5, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_6, Ok(MyLabels::SecondLabel));
     }
 
     #[test]
@@ -177,13 +179,13 @@ mod tests {
         let output_5 = predict(&dataset_3d, x3, 1);
         let output_6 = predict(&dataset_3d, x3, 9);
 
-        assert_eq!(output_1, Some(MyLabels::FirstLabel));
-        assert_eq!(output_2, Some(MyLabels::SecondLabel));
-        assert_eq!(output_3, None);
-        assert_eq!(output_4, None);
-        assert_eq!(output_2, Some(MyLabels::SecondLabel));
-        assert_eq!(output_5, Some(MyLabels::SecondLabel));
-        assert_eq!(output_6, Some(MyLabels::SecondLabel));
+        assert_eq!(output_1, Ok(MyLabels::FirstLabel));
+        assert_eq!(output_2, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_3, Err(KNNError::DatasetTooSmall));
+        assert_eq!(output_4, Err(KNNError::KMustBePositive));
+        assert_eq!(output_2, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_5, Ok(MyLabels::SecondLabel));
+        assert_eq!(output_6, Ok(MyLabels::SecondLabel));
     }
 
     #[test]
