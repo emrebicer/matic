@@ -1,3 +1,4 @@
+pub mod linalg;
 use std::ops::{Add, Div};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
