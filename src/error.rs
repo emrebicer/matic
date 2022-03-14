@@ -1,10 +1,6 @@
 #[derive(Debug, PartialEq)]
-pub enum KNNError {
+pub enum Error {
     DatasetTooSmall,
-    KMustBePositive
-}
-
-#[derive(Debug, PartialEq)]
-pub enum LinAlgError {
-    DifferentSizedInputs
+    KMustBePositive,
+    InputError(& 'static str)
 }

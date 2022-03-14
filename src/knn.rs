@@ -1,4 +1,4 @@
-use crate::error::KNNError;
+use crate::error::Error;
 use crate::math::Distance;
 
 #[derive(PartialEq, Debug)]
@@ -8,17 +8,17 @@ struct Neighbor<L> {
 }
 
 /// Predict the label of `x` given `dataset` and `k`
-pub fn predict<F, L>(dataset: &Vec<(F, L)>, x: F, k: usize) -> Result<L, KNNError>
+pub fn predict<F, L>(dataset: &Vec<(F, L)>, x: F, k: usize) -> Result<L, Error>
 where
     F: Distance + Copy,
     L: Eq + Copy + std::fmt::Debug,
 {
     if dataset.len() < k {
-        return Err(KNNError::DatasetTooSmall);
+        return Err(Error::DatasetTooSmall);
     }
 
     if k < 1 {
-        return Err(KNNError::KMustBePositive);
+        return Err(Error::KMustBePositive);
     }
 
     // Find the closest neighbors to x
@@ -81,7 +81,7 @@ where
 mod tests {
 
     use super::predict;
-    use crate::error::KNNError;
+    use crate::error::Error;
     use crate::math::{Point2d, Point3d};
 
     use plotlib::page::Page;
@@ -129,8 +129,8 @@ mod tests {
 
         assert_eq!(output_1, Ok(MyLabels::FirstLabel));
         assert_eq!(output_2, Ok(MyLabels::SecondLabel));
-        assert_eq!(output_3, Err(KNNError::DatasetTooSmall));
-        assert_eq!(output_4, Err(KNNError::KMustBePositive));
+        assert_eq!(output_3, Err(Error::DatasetTooSmall));
+        assert_eq!(output_4, Err(Error::KMustBePositive));
         assert_eq!(output_2, Ok(MyLabels::SecondLabel));
         assert_eq!(output_5, Ok(MyLabels::SecondLabel));
         assert_eq!(output_6, Ok(MyLabels::SecondLabel));
@@ -181,8 +181,8 @@ mod tests {
 
         assert_eq!(output_1, Ok(MyLabels::FirstLabel));
         assert_eq!(output_2, Ok(MyLabels::SecondLabel));
-        assert_eq!(output_3, Err(KNNError::DatasetTooSmall));
-        assert_eq!(output_4, Err(KNNError::KMustBePositive));
+        assert_eq!(output_3, Err(Error::DatasetTooSmall));
+        assert_eq!(output_4, Err(Error::KMustBePositive));
         assert_eq!(output_2, Ok(MyLabels::SecondLabel));
         assert_eq!(output_5, Ok(MyLabels::SecondLabel));
         assert_eq!(output_6, Ok(MyLabels::SecondLabel));
