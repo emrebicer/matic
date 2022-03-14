@@ -10,7 +10,7 @@ pub struct Point2d {
 // Euclidean distance for 2 dimensions
 impl Distance for Point2d {
     fn distance(&self, other: Point2d) -> f64 {
-        ((&self.x - other.x).powf(2.0) + (&self.y - other.y).powf(2.0)).sqrt()
+        ((&self.x - other.x).powi(2) + (&self.y - other.y).powi(2)).sqrt()
     }
 }
 
@@ -100,11 +100,22 @@ impl Div<usize> for Point3d {
 // Euclidean distance for 3 dimensions
 impl Distance for Point3d {
     fn distance(&self, other: Point3d) -> f64 {
-        ((&self.x - other.x).powf(2.0)
-            + (&self.y - other.y).powf(2.0)
-            + (&self.z - other.z).powf(2.0))
+        ((&self.x - other.x).powi(2)
+            + (&self.y - other.y).powi(2)
+            + (&self.z - other.z).powi(2))
         .sqrt()
     }
+}
+
+/// `data` is a vector that contains tuples of (prediction, ground_truth)
+pub fn least_squares_error(data: &Vec<(f64, f64)>) -> f64 {
+    let mut error = 0.;
+
+    for (prediction, ground_truth) in data {
+        error += (prediction - ground_truth).powi(2);
+    }
+
+    unimplemented!();
 }
 
 pub trait Distance {
