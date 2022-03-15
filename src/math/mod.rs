@@ -107,17 +107,6 @@ impl Distance for Point3d {
     }
 }
 
-/// `data` is a vector that contains tuples of (prediction, ground_truth)
-pub fn least_squares_error(data: &Vec<(f64, f64)>) -> f64 {
-    let mut error = 0.;
-
-    for (prediction, ground_truth) in data {
-        error += (prediction - ground_truth).powi(2);
-    }
-
-    unimplemented!();
-}
-
 pub trait Distance {
     fn distance(&self, other: Self) -> f64;
 }

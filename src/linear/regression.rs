@@ -1,71 +1,99 @@
 use crate::error::Error;
-use crate::math::linalg::dot;
+use crate::math::linalg::Matrix2d;
 
 pub struct LinearRegression {
     // Weights
-    coefficients: Vec<f64>,
+    coefficients: Matrix2d,
     // Bias
     intercept: f64,
-    max_iter: usize,
+    use_intercept: bool,
 }
 
 impl LinearRegression {
-    /// Linear regression; calculates the coefficients and intercept that fits the data
-    ///
+    pub fn new(use_intercept: Option<bool>) -> Self {
+        LinearRegression {
+            coefficients: Matrix2d::new((1, 1)).unwrap(),
+            intercept: 0.,
+            use_intercept: use_intercept.unwrap_or(false),
+        }
+    }
+    /// Linear regression; calculates the coefficients and intercept that fits
+    /// the given training data
     ///
     /// # Parameters
     ///
-    /// `training_data` is a vector that contains tuples
+    /// `training_x` training observations
     ///
-    /// `training_data.0` is a vector that contains training inputs,
-    ///     every vector in it should have the same length
-    ///
-    /// `training_data.1` is a vector that contains target values
+    /// `training_y` training targets
     ///
     /// # Returns
     ///
-    /// A tuple of 2 values; first value is coefficients (a vector of weights)
-    /// and the second valueis the intercept (bias)
+    /// The calculated weights (coefficients) are returned
     ///
-    pub fn fit(&self, training_data: &Vec<(Vec<f64>, f64)>) -> Result<(Vec<f64>, f64), Error> {
-        if training_data.is_empty() {
-            return Err(Error::InputError("training_data can't be empty"));
+    pub fn fit(&mut self, training_x: &Matrix2d, training_y: &Matrix2d) -> Result<Matrix2d, Error> {
+        if training_x.get_size().0 != training_y.get_size().0 {
+            return Err(Error::InputError("training data size mismatch"));
         }
 
-        // Make sure the training data contains the same sized vectors
-        let feature_size = training_data.first().unwrap().0.len();
+        self.coefficients = training_x
+            .transpose()?
+            .matmul(training_x)?
+            .inverse()?
+            .matmul(&training_x.transpose()?)?
+            .matmul(&training_y)?;
 
-        for vals in training_data.iter() {
-            if vals.0.len() != feature_size {
-                return Err(Error::InputError(
-                    "training_data can't contain different sized vectors",
-                ));
-            }
-        }
-
-        let mut iteration_count = 0;
-
-        // Initialize coefficients
-        let mut coefficients = vec![];
-        let mut intercept = 1;
-
-        for _ in 0..feature_size {
-            coefficients.push(1);
-        }
-
-        while iteration_count < self.max_iter {
-            iteration_count += 1;
-        }
-
-        unimplemented!();
+        return Ok(self.coefficients.clone());
     }
 
     /// Calculates the prediction given weight and input
-    /// prediction = f(x) = ax + b
-    pub fn predict(&self, x: &Vec<f64>) -> Result<f64, Error> {
-        return match dot(x, &self.coefficients) {
-            Ok(val) => Ok(val + self.intercept),
+    pub fn predict(&self, x: &Matrix2d) -> Result<f64, Error> {
+        match x.matmul(&self.coefficients) {
+            Ok(mult_matrix) => {
+                let mult = mult_matrix.get_elements()[0][0];
+                if self.use_intercept {
+                    Ok(mult + self.intercept)
+                } else {
+                    Ok(mult)
+                }
+            }
             Err(err) => Err(err),
-        };
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::math::linalg::Matrix2d;
+
+    use super::LinearRegression;
+    use assert_approx_eq::assert_approx_eq;
+
+    #[test]
+    fn fit_test() {
+        // f(a, b) = a + 2 * b
+        let training_data_vec = vec![
+            vec![1., 2.],
+            vec![2., 3.],
+            vec![3., 4.],
+            vec![4., 5.],
+            vec![5., 6.],
+        ];
+        let training_x = Matrix2d::from_vec(&training_data_vec).unwrap();
+        let training_y = Matrix2d::from_vec(&vec![vec![5., 8., 11., 14., 17.]])
+            .unwrap()
+            .transpose()
+            .unwrap();
+
+        let mut lr = LinearRegression::new(None);
+
+        let coef = lr.fit(&training_x, &training_y).unwrap().get_elements();
+        assert_approx_eq!(coef[0][0], 1.);
+        assert_approx_eq!(coef[1][0], 2.);
+
+        assert_approx_eq!(
+            lr.predict(&Matrix2d::from_vec(&vec![vec![15., 80.]]).unwrap())
+                .unwrap(),
+            175.
+        );
     }
 }

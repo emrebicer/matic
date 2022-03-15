@@ -1,7 +1,7 @@
 use crate::error::Error;
 use std::iter::zip;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Matrix2d {
     size: (usize, usize),
     elements: Vec<Vec<f64>>,
@@ -55,33 +55,43 @@ impl Matrix2d {
         })
     }
 
+    pub fn get_size(&self) -> (usize, usize) {
+        return self.size;
+    }
+
+    pub fn get_elements(&self) -> Vec<Vec<f64>>{
+        return self.elements.clone();
+    }
+
     pub fn is_square_matrix(&self) -> bool {
         return self.size.0 == self.size.1;
     }
 
-    pub fn inverse(&self) -> Result<Vec<Vec<f64>>, Error> {
-        return inverse_2d(&self.elements);
+    pub fn inverse(&self) -> Result<Self, Error> {
+        let inversed = inverse_2d(&self.elements)?;
+        return Self::from_vec(&inversed);
     }
 
-    pub fn transpose(&self) -> Result<Vec<Vec<f64>>, Error> {
-        return transpose_2d(&self.elements);
+    pub fn transpose(&self) -> Result<Self, Error> {
+        let transposed = transpose_2d(&self.elements)?;
+        return Self::from_vec(&transposed);
     }
 
     /// Calculates the output of matrix multiplication from `first` * `second`
     /// The number of columns in the `first` matrix must match the number of
     /// rows in the `second` matrix
-    pub fn matmul(first: &Self, second: &Self) -> Result<Self, Error> {
-        if first.size.1 != second.size.0 {
+    pub fn matmul(&self, second: &Self) -> Result<Self, Error> {
+        if self.size.1 != second.size.0 {
             return Err(Error::InputError(""));
         }
 
-        let mut out = Matrix2d::new((first.size.0, second.size.1))?;
+        let mut out = Matrix2d::new((self.size.0, second.size.1))?;
 
         for row in 0..out.size.0 {
             for col in 0..out.size.1 {
                 let mut val = 0.;
                 for i in 0..second.size.0 {
-                    val += first.elements[row][i] * second.elements[i][col];
+                    val += self.elements[row][i] * second.elements[i][col];
                 }
                 out.elements[row][col] = val;
             }
@@ -304,11 +314,16 @@ mod tests {
             vec![26., 12., 43., 12.],
             vec![17., 10., 30., 17.],
             vec![36., 16., 59., 14.],
-        ]);
+        ]).unwrap();
 
         assert_eq!(
             Matrix2d::matmul(&first, &second).unwrap(),
-            expected.unwrap()
+            expected
+        );
+
+        assert_eq!(
+            first.matmul(&second).unwrap(),
+            expected
         );
     }
 }
