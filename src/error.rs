@@ -2,5 +2,5 @@
 pub enum Error {
     DatasetTooSmall,
     KMustBePositive,
-    InputError(& 'static str)
+    InputError(String)
 }

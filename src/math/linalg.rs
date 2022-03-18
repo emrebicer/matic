@@ -14,7 +14,7 @@ impl Matrix2d {
     /// `size` both values in this tuple should be positive
     pub fn new(size: (usize, usize)) -> Result<Self, Error> {
         if size.0 == 0 || size.1 == 0 {
-            return Err(Error::InputError("size must be positive"));
+            return Err(Error::InputError("size must be positive".to_string()));
         }
         let mut elements = vec![];
         for _ in 0..size.0 {
@@ -34,7 +34,7 @@ impl Matrix2d {
     /// `elements` should not be empty
     pub fn from_vec(elements: &Vec<Vec<f64>>) -> Result<Self, Error> {
         if elements.is_empty() {
-            return Err(Error::InputError("size must be positive"));
+            return Err(Error::InputError("size must be positive".to_string()));
         }
 
         // Make sure the training data contains the same sized vectors
@@ -44,7 +44,7 @@ impl Matrix2d {
         for column in elements.iter() {
             if column.len() != column_size {
                 return Err(Error::InputError(
-                    "elements must include same sized vectors",
+                    "elements must include same sized vectors".to_string(),
                 ));
             }
         }
@@ -59,7 +59,7 @@ impl Matrix2d {
         return self.size;
     }
 
-    pub fn get_elements(&self) -> Vec<Vec<f64>>{
+    pub fn get_elements(&self) -> Vec<Vec<f64>> {
         return self.elements.clone();
     }
 
@@ -77,12 +77,59 @@ impl Matrix2d {
         return Self::from_vec(&transposed);
     }
 
+    /// Insert a new row to the matrix
+    pub fn insert_row(&mut self, index: usize, new_row: &Vec<f64>) -> Result<(), Error> {
+        if self.size.1 != new_row.len() {
+            return Err(Error::InputError(
+                "New row must match the previos rows size".to_string(),
+            ));
+        }
+
+        if index > self.size.0 {
+            return Err(Error::InputError(
+                "insertion index ({index}) should be <= row length ({self.size.0})".to_string(),
+            ));
+        }
+
+        self.elements.insert(index, new_row.clone());
+        self.size.0 += 1;
+
+        return Ok(());
+    }
+
+    /// Insert a new column to the matrix
+    pub fn insert_column(&mut self, index: usize, new_column: &Vec<f64>) -> Result<(), Error> {
+        if self.size.0 != new_column.len() {
+            return Err(Error::InputError(
+                "New column must match the previos columns size".to_string(),
+            ));
+        }
+
+        if index > self.size.1 {
+            return Err(Error::InputError(format!(
+                "insertion index ({}) should be <= column length ({})",
+                index, self.size.1
+            )));
+        }
+
+        self.elements
+            .iter_mut()
+            .zip(new_column.iter())
+            .for_each(|x| x.0.insert(index, *x.1));
+        self.size.1 += 1;
+
+        return Ok(());
+    }
+
     /// Calculates the output of matrix multiplication from `first` * `second`
     /// The number of columns in the `first` matrix must match the number of
     /// rows in the `second` matrix
     pub fn matmul(&self, second: &Self) -> Result<Self, Error> {
         if self.size.1 != second.size.0 {
-            return Err(Error::InputError(""));
+            return Err(Error::InputError(format!(
+                "Number of rows in the first matrix ({}) must match the number of columns in the second matrix ({})",
+                self.size.1, second.size.0
+            )));
         }
 
         let mut out = Matrix2d::new((self.size.0, second.size.1))?;
@@ -103,7 +150,9 @@ impl Matrix2d {
 
 pub fn dot(a: &Vec<f64>, b: &Vec<f64>) -> Result<f64, Error> {
     if a.len() != b.len() {
-        return Err(Error::InputError("a and b must have the same size"));
+        return Err(Error::InputError(
+            "a and b must have the same size".to_string(),
+        ));
     }
 
     return Ok(zip(a, b)
@@ -120,14 +169,16 @@ pub fn dot(a: &Vec<f64>, b: &Vec<f64>) -> Result<f64, Error> {
 pub fn inverse_2d(matrix: &Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Error> {
     // Input matrix must be a square matrix
     if matrix.is_empty() {
-        return Err(Error::InputError("matrix can't be empty"));
+        return Err(Error::InputError("matrix can't be empty".to_string()));
     }
 
     let mut inverse = vec![];
     let n = matrix.len();
     for (i, vals) in matrix.iter().enumerate() {
         if vals.len() != n {
-            return Err(Error::InputError("input must be a square matrix"));
+            return Err(Error::InputError(
+                "input must be a square matrix".to_string(),
+            ));
         }
         let mut row = vec![];
         for val in vals {
@@ -176,7 +227,7 @@ pub fn inverse_2d(matrix: &Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Error> {
 }
 pub fn transpose_2d(matrix: &Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Error> {
     if matrix.is_empty() {
-        return Err(Error::InputError("matrix can't be empty"));
+        return Err(Error::InputError("matrix can't be empty".to_string()));
     }
 
     let m = matrix.len();
@@ -185,7 +236,7 @@ pub fn transpose_2d(matrix: &Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>, Error> {
     for vals in matrix.iter() {
         if vals.len() != n {
             return Err(Error::InputError(
-                "all rows in the matrix should have the same length",
+                "all rows in the matrix should have the same length".to_string(),
             ));
         }
     }
@@ -220,11 +271,15 @@ mod tests {
         );
         assert_eq!(
             dot(vec![1., 3.].as_ref(), vec![4., -2., -1.].as_ref()),
-            Err(Error::InputError("a and b must have the same size"))
+            Err(Error::InputError(
+                "a and b must have the same size".to_string()
+            ))
         );
         assert_eq!(
             dot(vec![1., 3., -5.].as_ref(), vec![4., -2.].as_ref()),
-            Err(Error::InputError("a and b must have the same size"))
+            Err(Error::InputError(
+                "a and b must have the same size".to_string()
+            ))
         );
         assert_eq!(dot(vec![].as_ref(), vec![].as_ref()), Ok(0.));
     }
@@ -314,16 +369,47 @@ mod tests {
             vec![26., 12., 43., 12.],
             vec![17., 10., 30., 17.],
             vec![36., 16., 59., 14.],
-        ]).unwrap();
+        ])
+        .unwrap();
 
-        assert_eq!(
-            Matrix2d::matmul(&first, &second).unwrap(),
-            expected
-        );
+        assert_eq!(Matrix2d::matmul(&first, &second).unwrap(), expected);
 
-        assert_eq!(
-            first.matmul(&second).unwrap(),
-            expected
-        );
+        assert_eq!(first.matmul(&second).unwrap(), expected);
+    }
+
+    #[test]
+    fn matrix_insert_row_test() {
+        let elems = vec![vec![0., 2., 3.], vec![4., 0., 6.]];
+        let mut matrix = Matrix2d::from_vec(&elems).unwrap();
+
+        // Should be error, index out of range
+        let result = matrix.insert_row(3, &vec![9., 9., 9.]);
+        assert_eq!(result.is_err(), true);
+
+        // Should be error, size does not match
+        let result = matrix.insert_row(1, &vec![9., 9.]);
+        assert_eq!(result.is_err(), true);
+
+        let _ = matrix.insert_row(1, &vec![9., 9., 9.]);
+        let new_elems = vec![vec![0., 2., 3.], vec![9., 9., 9.], vec![4., 0., 6.]];
+        assert_eq!(new_elems, matrix.get_elements());
+    }
+
+    #[test]
+    fn matrix_insert_column_test() {
+        let elems = vec![vec![0., 2., 3.], vec![4., 0., 6.]];
+        let mut matrix = Matrix2d::from_vec(&elems).unwrap();
+
+        // Should be error, index out of range
+        let result = matrix.insert_column(4, &vec![9., 9.]);
+        assert_eq!(result.is_err(), true);
+
+        // Should be error, size does not match
+        let result = matrix.insert_column(1, &vec![9., 9., 9.]);
+        assert_eq!(result.is_err(), true);
+
+        let _ = matrix.insert_column(3, &vec![9., 8.]);
+        let new_elems = vec![vec![0., 2., 3., 9.], vec![4., 0., 6., 8.]];
+        assert_eq!(new_elems, matrix.get_elements());
     }
 }
